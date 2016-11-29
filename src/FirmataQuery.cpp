@@ -10,9 +10,13 @@
 
 using namespace remote_wiring::protocol;
 
+
+std::promise<void> FirmataQuery::callback_signal;
+std::future<void> FirmataQuery::callback_gate = callback_signal.get_future();
 void * FirmataQuery::contract_ready_callback_context = nullptr;
-bool FirmataQuery::contract_ready = false;
+std::atomic_bool FirmataQuery::contract_ready(false);
 FirmataQuery::contractReady FirmataQuery::contractReadyCallback = nullptr;
+std::atomic_bool FirmataQuery::firmata_ready(false);
 pin_config_t * FirmataQuery::pin = nullptr;
 size_t FirmataQuery::pin_count = 0;
 
@@ -23,6 +27,29 @@ FirmataQuery::FirmataQuery (
     _parser_buffer_size(0),
     _stream(nullptr)
 {
+}
+
+DeviceContract *
+FirmataQuery::detachDeviceContract (
+    void
+) {
+    if ( !contract_ready || !pin ) { return nullptr; }
+
+    return (new FirmataContract(pin, pin_count));
+}
+
+void
+FirmataQuery::firmataReadyCallback (
+    void
+) {
+    callback_signal.set_value();
+}
+
+Stream *
+FirmataQuery::getStream (
+    void
+) const {
+    return _stream;
 }
 
 int
@@ -50,13 +77,17 @@ FirmataQuery::queryContractAsync (
         // Register callbacks
         _stream->registerSerialEventCallback(FirmataQuery::serialEventCallback, this);
         _parser.attach(FirmataQuery::extendBuffer, this);
+        _parser.attach(REPORT_VERSION, FirmataQuery::firmataReadyCallback);
         _parser.attach(START_SYSEX, FirmataQuery::queryResponseCallback);
 
         // Invoke the marshaller
         _marshaller.begin(*_stream);
-        _marshaller.sendCapabilityQuery();
-
-        error = 0;
+        if ( std::future_status::ready != callback_gate.wait_for(std::chrono::milliseconds(10000)) ) {
+            error = __LINE__;
+        } else {
+            _marshaller.sendCapabilityQuery();
+            error = 0;
+        }
     }
 
     return error;
@@ -146,22 +177,6 @@ FirmataQuery::extendBuffer (
         (void)query->_parser.setDataBufferOfSize(query->_parser_buffer, query->_parser_buffer_size);
         std::cout << "Buffer increased to " << query->_parser_buffer_size << "-byte buffer." << std::endl;
     }
-}
-
-DeviceContract *
-FirmataQuery::detachDeviceContract (
-    void
-) {
-    if ( !contract_ready || !pin ) { return nullptr; }
-
-    return (new FirmataContract(pin, pin_count));
-}
-
-Stream *
-FirmataQuery::getStream (
-    void
-) const {
-    return _stream;
 }
 
 void

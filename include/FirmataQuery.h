@@ -3,6 +3,10 @@
 #ifndef FIRMATA_QUERY_H
 #define FIRMATA_QUERY_H
 
+#include <atomic>
+#include <chrono>
+#include <future>
+
 #include <FirmataMarshaller.h>
 #include <FirmataParser.h>
 
@@ -47,11 +51,26 @@ class FirmataQuery : public DeviceQuery {
         void
     );
 
+    static std::promise<void> callback_signal;
+    static std::future<void> callback_gate;
     static void * contract_ready_callback_context;
-    static bool contract_ready;
+    static std::atomic_bool contract_ready;
     static contractReady contractReadyCallback;
+    static std::atomic_bool firmata_ready;
     static pin_config_t * pin;
     static size_t pin_count;
+
+    static
+    void
+    extendBuffer (
+        void * context_
+    );
+
+    static
+    void
+    firmataReadyCallback (
+        void
+    );
 
     static
     void
@@ -59,12 +78,6 @@ class FirmataQuery : public DeviceQuery {
         uint8_t command,
         uint8_t argc,
         uint8_t * argv
-    );
-
-    static
-    void
-    extendBuffer (
-        void * context_
     );
 
     static

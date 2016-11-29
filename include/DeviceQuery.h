@@ -8,7 +8,7 @@
 namespace remote_wiring {
 namespace protocol {
 
-class DeviceContract;
+struct DeviceContract;
 
 /*!
  * \brief An interface for requesting and processing the capabilities of a remote device.

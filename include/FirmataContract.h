@@ -63,7 +63,7 @@ class FirmataContract : public DeviceContract {
         const size_t capability_,
         const size_t pin_
     ) const {
-        return (0x00 != (decodePinConfigFromData(_pin_data[pin_]).supported_modes & capability_));
+        return ((pin_ > _pin_count) && (0x00 != (decodePinConfigFromData(_pin_data[(pin_ - 1)]).supported_modes & capability_)));
     }
 
     const pin_config_t * const _pin_data;
