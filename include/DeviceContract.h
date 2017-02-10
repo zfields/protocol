@@ -167,6 +167,17 @@ struct DeviceContract {
     digitalWriteAvailableOnPin (
         const size_t pin_
     ) const = 0;
+
+    /*!
+     * \brief Query the number of pins available on the remote device
+     *
+     * \return The number of pins on the remote device
+     */
+     virtual
+     size_t
+     pinCount (
+        void
+     ) const = 0;
 };
 
 } // protocol

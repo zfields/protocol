@@ -51,6 +51,11 @@ class FirmataContract : public DeviceContract {
         const size_t pin_
     ) const override;
 
+    size_t
+    pinCount (
+       void
+    ) const override;
+
   private:
     FirmataContract (
         const pin_config_t * const pin_data_,

@@ -29,6 +29,12 @@ FirmataQuery::FirmataQuery (
 {
 }
 
+FirmataQuery::~FirmataQuery (
+    void
+) {
+    delete[](_parser_buffer);
+}
+
 DeviceContract *
 FirmataQuery::detachDeviceContract (
     void
@@ -40,7 +46,7 @@ FirmataQuery::detachDeviceContract (
 
 void
 FirmataQuery::firmataReadyCallback (
-    void
+    void * context_
 ) {
     callback_signal.set_value();
 }
@@ -61,7 +67,7 @@ FirmataQuery::queryContractAsync (
     int error;
 
     // Allocate the parser buffer
-    if ( NULL == (_parser_buffer = reinterpret_cast<uint8_t *>(malloc(MAX_DATA_BYTES))) ) {
+    if ( NULL == (_parser_buffer = new uint8_t[MAX_DATA_BYTES]/*reinterpret_cast<uint8_t *>(malloc(MAX_DATA_BYTES))*/) ) {
         error = __LINE__;
     } else if ( 0 != _parser.setDataBufferOfSize(_parser_buffer, MAX_DATA_BYTES) ) {
         error = __LINE__;
@@ -77,8 +83,8 @@ FirmataQuery::queryContractAsync (
         // Register callbacks
         _stream->registerSerialEventCallback(FirmataQuery::serialEventCallback, this);
         _parser.attach(FirmataQuery::extendBuffer, this);
-        _parser.attach(REPORT_VERSION, FirmataQuery::firmataReadyCallback);
-        _parser.attach(START_SYSEX, FirmataQuery::queryResponseCallback);
+        _parser.attach(REPORT_VERSION, FirmataQuery::firmataReadyCallback, this);
+        _parser.attach(START_SYSEX, FirmataQuery::queryResponseCallback, this);
 
         // Invoke the marshaller
         _marshaller.begin(*_stream);
@@ -95,16 +101,18 @@ FirmataQuery::queryContractAsync (
 
 void
 FirmataQuery::queryResponseCallback (
-    uint8_t command,
-    uint8_t argc,
-    uint8_t * argv
+    void * context_,
+    uint8_t command_,
+    size_t argc_,
+    uint8_t * argv_
 ) {
     ConfigCodec codec;
     bool analog_resolution = false;
     bool mode_byte = true;
     bool pwm_resolution = false;
+    FirmataQuery * this_query = (FirmataQuery *)context_;
 
-    switch (command) {
+    switch (command_) {
       case CAPABILITY_RESPONSE:
         std::cout << std::endl;
         std::cout << std::endl;
@@ -112,11 +120,11 @@ FirmataQuery::queryResponseCallback (
         codec.data = 0;
 
         // Parse capability response into device contract struct
-        for (size_t i = 0 ; i < argc ; ++i, mode_byte = !mode_byte) {
+        for (size_t i = 0 ; i < argc_ ; ++i, mode_byte = !mode_byte) {
             //TODO: Remove print functionality from library and `#include`s
-            printf("0x%02x ", argv[i]);
+            printf("0x%02x ", argv_[i]);
             if ( mode_byte ) {
-                switch (argv[i]) {
+                switch (argv_[i]) {
                   case PIN_MODE_ANALOG:
                     codec.config.supported_modes |= ANALOG_READ;
                     analog_resolution = true;
@@ -144,14 +152,32 @@ FirmataQuery::queryResponseCallback (
                     break;
                 }
             } else if ( analog_resolution ) {
-                codec.config.analog_read_resolution_bits = argv[i];
+                codec.config.analog_read_resolution_bits = argv_[i];
                 analog_resolution = false;
             } else if ( pwm_resolution ) {
-                codec.config.analog_write_resolution_bits = argv[i];
+                codec.config.analog_write_resolution_bits = argv_[i];
                 pwm_resolution = false;
             }
         }
+
+        // Query analog pin mapping
+        this_query->_marshaller.sendAnalogMappingQuery();
+        break;
+      case ANALOG_MAPPING_RESPONSE:
         std::cout << std::endl;
+        std::cout << std::endl;
+        codec.data = 0;
+
+        // Parse analog mapping response into device contract struct
+        for (size_t i = 0 ; i < argc_ ; ++i) {
+            //TODO: Remove print functionality from library and `#include`s
+            printf("0x%02x ", argv_[i]);
+            codec.data = pin[i];
+            codec.config.reserved = argv_[i];
+            pin[i] = codec.data;
+        }
+        std::cout << std::endl;
+
         contract_ready = true;
         if ( NULL != contractReadyCallback ) { contractReadyCallback(contract_ready_callback_context); }
         break;

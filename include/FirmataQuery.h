@@ -20,6 +20,11 @@ namespace protocol {
 class FirmataQuery : public DeviceQuery {
   public:
     FirmataQuery (
+        void
+    );
+
+    ~FirmataQuery (
+        void
     );
 
     int
@@ -69,15 +74,16 @@ class FirmataQuery : public DeviceQuery {
     static
     void
     firmataReadyCallback (
-        void
+        void * context_
     );
 
     static
     void
     queryResponseCallback (
-        uint8_t command,
-        uint8_t argc,
-        uint8_t * argv
+        void * context_,
+        uint8_t command_,
+        size_t argc_,
+        uint8_t * argv_
     );
 
     static

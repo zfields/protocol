@@ -70,4 +70,11 @@ FirmataContract::digitalWriteAvailableOnPin (
     return capabilityAvailableOnPin(DIGITAL_WRITE, pin_);
 }
 
+size_t
+FirmataContract::pinCount (
+    void
+) const {
+    return _pin_count;
+}
+
 /* Created and copyrighted by Zachary J. Fields. Offered as open source under the MIT License (MIT). */
