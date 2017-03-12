@@ -45,8 +45,8 @@ class FirmataQuery : public DeviceQuery {
     ) const override;
 
   private:
-    FirmataMarshaller _marshaller;
-    FirmataParser _parser;
+    firmata::FirmataMarshaller _marshaller;
+    firmata::FirmataParser _parser;
     uint8_t * _parser_buffer;
     size_t _parser_buffer_size;
     Stream * _stream;

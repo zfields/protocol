@@ -74,27 +74,23 @@ class FirmataContract : public DeviceContract {
     const pin_config_t * const _pin_data;
     const size_t _pin_count;
 
-    //TODO: Make thread safe
     static inline
     PinConfig
     decodePinConfigFromData (
         pin_config_t data_
     ) {
-        codec.data = data_;
+        ConfigCodec codec = { data_ };
         return codec.config;
     }
 
-    //TODO: Make thread safe
     static inline
     pin_config_t
     encodeDataFromPinConfig (
         PinConfig config_
     ) {
-        codec.config = config_;
+        ConfigCodec codec = { *reinterpret_cast<pin_config_t *>(&config_) };
         return codec.data;
     }
-
-    static ConfigCodec codec;
 };
 
 } // protocol

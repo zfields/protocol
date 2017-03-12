@@ -10,8 +10,6 @@ const pin_config_t remote_wiring::protocol::DIGITAL_READ = 0x04;
 const pin_config_t remote_wiring::protocol::DIGITAL_READ_WITH_PULLUP = 0x08;
 const pin_config_t remote_wiring::protocol::DIGITAL_WRITE = 0x10;
 
-ConfigCodec FirmataContract::codec;
-
 FirmataContract::FirmataContract (
     const pin_config_t * const pin_data_,
     const size_t pin_count_

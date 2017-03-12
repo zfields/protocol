@@ -67,9 +67,9 @@ FirmataQuery::queryContractAsync (
     int error;
 
     // Allocate the parser buffer
-    if ( NULL == (_parser_buffer = new uint8_t[MAX_DATA_BYTES]/*reinterpret_cast<uint8_t *>(malloc(MAX_DATA_BYTES))*/) ) {
+    if ( NULL == (_parser_buffer = new uint8_t[firmata::MAX_DATA_BYTES]) ) {
         error = __LINE__;
-    } else if ( 0 != _parser.setDataBufferOfSize(_parser_buffer, MAX_DATA_BYTES) ) {
+    } else if ( 0 != _parser.setDataBufferOfSize(_parser_buffer, firmata::MAX_DATA_BYTES) ) {
         error = __LINE__;
     } else {
         // Store user supplied variables
@@ -78,13 +78,13 @@ FirmataQuery::queryContractAsync (
         contract_ready_callback_context = contract_ready_callback_context_;
 
         // Update state
-        _parser_buffer_size = MAX_DATA_BYTES;
+        _parser_buffer_size = firmata::MAX_DATA_BYTES;
 
         // Register callbacks
         _stream->registerSerialEventCallback(FirmataQuery::serialEventCallback, this);
         _parser.attach(FirmataQuery::extendBuffer, this);
-        _parser.attach(REPORT_VERSION, FirmataQuery::firmataReadyCallback, this);
-        _parser.attach(START_SYSEX, FirmataQuery::queryResponseCallback, this);
+        _parser.attach(firmata::REPORT_VERSION, FirmataQuery::firmataReadyCallback, this);
+        _parser.attach(firmata::START_SYSEX, FirmataQuery::queryResponseCallback, this);
 
         // Invoke the marshaller
         _marshaller.begin(*_stream);
@@ -113,7 +113,7 @@ FirmataQuery::queryResponseCallback (
     FirmataQuery * this_query = (FirmataQuery *)context_;
 
     switch (command_) {
-      case CAPABILITY_RESPONSE:
+      case firmata::CAPABILITY_RESPONSE:
         std::cout << std::endl;
         std::cout << std::endl;
         pin_count = 0;
@@ -125,11 +125,11 @@ FirmataQuery::queryResponseCallback (
             printf("0x%02x ", argv_[i]);
             if ( mode_byte ) {
                 switch (argv_[i]) {
-                  case PIN_MODE_ANALOG:
+                  case firmata::PIN_MODE_ANALOG:
                     codec.config.supported_modes |= ANALOG_READ;
                     analog_resolution = true;
                     break;
-                  case PIN_MODE_IGNORE:
+                  case firmata::PIN_MODE_IGNORE:
                     printf("\nPinConfig %u:\n\tsupported modes: 0x%02x\n\tanalog read resolution bits: %u\n\tanalog write resolution bits: %u\n\n", static_cast<unsigned int>(pin_count), static_cast<uint8_t>(codec.config.supported_modes), static_cast<uint8_t>(codec.config.analog_read_resolution_bits), static_cast<uint8_t>(codec.config.analog_write_resolution_bits));
                     ++pin_count;
                     pin = (pin_config_t *)realloc(pin, (sizeof(pin_config_t) * pin_count));
@@ -137,16 +137,16 @@ FirmataQuery::queryResponseCallback (
                     codec.data = 0;
                     mode_byte = !mode_byte;
                     break;
-                  case PIN_MODE_INPUT:
+                  case firmata::PIN_MODE_INPUT:
                     codec.config.supported_modes |= DIGITAL_READ;
                     break;
-                  case PIN_MODE_OUTPUT:
+                  case firmata::PIN_MODE_OUTPUT:
                     codec.config.supported_modes |= DIGITAL_WRITE;
                     break;
-                  case PIN_MODE_PULLUP:
+                  case firmata::PIN_MODE_PULLUP:
                     codec.config.supported_modes |= DIGITAL_READ_WITH_PULLUP;
                     break;
-                  case PIN_MODE_PWM:
+                  case firmata::PIN_MODE_PWM:
                     codec.config.supported_modes |= ANALOG_WRITE;
                     pwm_resolution = true;
                     break;
@@ -163,7 +163,7 @@ FirmataQuery::queryResponseCallback (
         // Query analog pin mapping
         this_query->_marshaller.sendAnalogMappingQuery();
         break;
-      case ANALOG_MAPPING_RESPONSE:
+      case firmata::ANALOG_MAPPING_RESPONSE:
         std::cout << std::endl;
         std::cout << std::endl;
         codec.data = 0;
